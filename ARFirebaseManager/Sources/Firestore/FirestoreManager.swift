@@ -1,7 +1,9 @@
 import FirebaseFirestore
 
 public struct FirestoreManager {
-    private static var db: Firestore = {
+    public init() {}
+    
+    private var db: Firestore = {
         let settings = FirestoreSettings()
         settings.cacheSettings = PersistentCacheSettings(sizeBytes: FirestoreCacheSizeUnlimited as NSNumber)
         let db = Firestore.firestore()
@@ -9,7 +11,7 @@ public struct FirestoreManager {
         return db
     }()
     
-    public static func getDocument<T: Firestorable>(_ type: T.Type, source: FirestoreSource = .server) async -> [T]? {
+    public func getDocuments<T: Firestorable>(_ type: T.Type, source: FirestoreSource = .server) async -> [T]? {
         try? await db.collection(type.firestoreCollectionName)
             .getDocuments(source: source)
             .documents
@@ -20,14 +22,14 @@ public struct FirestoreManager {
             }
     }
     
-    public static func getDocument<T: Firestorable>(_ type: T.Type, id: String, source: FirestoreSource = .server) async -> T? {
+    public func getDocument<T: Firestorable>(_ type: T.Type, id: String, source: FirestoreSource = .server) async -> T? {
         try? await db.collection(type.firestoreCollectionName)
             .document(id)
             .getDocument(source: source)
             .data(as: type)
     }
     
-    public static func getPaginatedDocument<T: Firestorable>(_ type: T.Type, start: Int, limit: Int) async -> [T]? {
+    public func getPaginatedDocuments<T: Firestorable>(_ type: T.Type, start: Int, limit: Int) async -> [T]? {
         guard !type.orderBy.isEmpty else {
             return nil
         }
@@ -45,7 +47,7 @@ public struct FirestoreManager {
     }
     
     @discardableResult
-    public static func insert<T: Firestorable>(_ object: T) -> String? {
+    public func insert<T: Firestorable>(_ object: T) -> String? {
         var object = object
         let id = (object.firestoreId ?? "").isEmpty ? UUID().uuidString : object.firestoreId!
         object.firestoreId = id
