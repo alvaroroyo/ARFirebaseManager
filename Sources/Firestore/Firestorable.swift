@@ -15,7 +15,7 @@ public extension Firestorable {
     }
 
     func saveOnCloud() {
-        FirestoreManager.insert(self)
+        FirestoreManager().insert(self)
     }
 
     static func getLocally(_ id: String) -> Self? {
