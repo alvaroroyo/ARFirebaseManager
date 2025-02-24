@@ -14,8 +14,9 @@ public extension Firestorable {
         UserDefaults.standard.set(data, forKey: id)
     }
 
-    func saveOnCloud() {
-        FirestoreManager().insert(self)
+    @MainActor
+    func saveOnCloud() async throws {
+        try await FirestoreManager().insert(self)
     }
 
     static func getLocally(_ id: String) -> Self? {

@@ -4,11 +4,7 @@ public struct FirestoreManager {
     public init() {}
     
     private var db: Firestore = {
-        let settings = FirestoreSettings()
-        settings.cacheSettings = PersistentCacheSettings(sizeBytes: FirestoreCacheSizeUnlimited as NSNumber)
-        let db = Firestore.firestore()
-        db.settings = settings
-        return db
+        Firestore.firestore()
     }()
     
     public func getDocuments<T: Firestorable>(_ type: T.Type, source: FirestoreSource = .server) async -> [T]? {
@@ -47,14 +43,27 @@ public struct FirestoreManager {
     }
     
     @discardableResult
-    public func insert<T: Firestorable>(_ object: T) -> String? {
-        var object = object
-        let id = (object.firestoreId ?? "").isEmpty ? UUID().uuidString : object.firestoreId!
-        object.firestoreId = id
-        try? db.collection(type(of: object).firestoreCollectionName)
-            .document(id)
-            .setData(from: object)
-        return id
+    public func insert<T: Firestorable>(_ object: T) async throws -> String? {
+        try await withCheckedThrowingContinuation { continuation in
+            DispatchQueue.main.async {
+                var object = object
+                let id = (object.firestoreId ?? "").isEmpty ? UUID().uuidString : object.firestoreId!
+                object.firestoreId = id
+                do {
+                    try db.collection(type(of: object).firestoreCollectionName)
+                        .document(id)
+                        .setData(from: object, completion: { error in
+                            if let error {
+                                continuation.resume(throwing: error)
+                            } else {
+                                continuation.resume(returning: id)
+                            }
+                        })
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
     }
     
 }
